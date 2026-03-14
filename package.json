@@ -21,6 +21,16 @@
     "typescript"
   ],
   "author": "Engr., Isaiah Pius E.",
+  
+  "repository": {
+    "url": "https://github.com/IsaiahTek/vynelix-fetch",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/IsaiahTek/vynelix-fetch/issues"
+  },
+  "homepage": "https://github.com/IsaiahTek/vynelix-fetch#readme",
+
   "license": "MIT",
   "devDependencies": {
     "tsx": "^4.0.0",
