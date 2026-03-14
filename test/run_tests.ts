@@ -43,7 +43,7 @@ async function runTests() {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ data: { id: 1, name: 'John Doe' } }),
+        json: () => Promise.resolve({ id: 1, name: 'John Doe' }),
       });
     }
 
@@ -59,6 +59,7 @@ async function runTests() {
 
   const client = new ApiClient({
     baseUrl: 'https://api.example.com',
+    responseMode: 'raw',
     authType: 'bearer',
     token: 'test-token',
     onError: (err) => console.log(`[onError Callback] ${err.title}: ${err.messages.join(', ')}`),

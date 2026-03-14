@@ -1,4 +1,30 @@
 /**
+ * A wrapper for API requests that allows for fluent chaining.
+ * Implements PromiseLike so it can be awaited directly for a wrapped response,
+ * or chained with .raw() for the unwrapped data.
+ * @template T The expected response data type.
+ */
+export class VynelixRequest {
+    exec;
+    constructor(exec) {
+        this.exec = exec;
+    }
+    /**
+     * Implements the then method for PromiseLike.
+     * Awaiting the request directly returns the wrapped ApiResponse.
+     */
+    then(onfulfilled, onrejected) {
+        return this.exec('wrapped').then(onfulfilled, onrejected);
+    }
+    /**
+     * Returns the raw data from the API response instead of the wrapped envelope.
+     * @returns A promise that resolves to the raw data T.
+     */
+    async raw() {
+        return this.exec('raw');
+    }
+}
+/**
  * A configurable and robust API client for handling HTTP requests,
  * authentication headers, and automatic token refreshing.
  */
@@ -48,14 +74,14 @@ export class ApiClient {
      * Internal fetch wrapper that handles base URL, headers, and 401 retries.
      * @template T The expected response data type.
      * @param endpoint The API endpoint (relative to baseUrl).
-     * @param options The fetch options and response mode.
+     * @param options The fetch options.
+     * @param responseMode The desired response format.
      * @param isRetry Whether this is a retry attempt after a refresh.
      * @returns A promise that resolves to the API response or raw data.
      */
-    async _fetch(endpoint, options = {}, isRetry = false) {
+    async _fetch(endpoint, options = {}, responseMode = 'wrapped', isRetry = false) {
         const url = `${this.config.baseUrl}${endpoint}`;
         const bodyIsFormData = options.body instanceof FormData;
-        const responseMode = options.responseMode || this.config.responseMode;
         const fetchOptions = {
             ...options,
             headers: await this.getAuthHeaders(options, bodyIsFormData),
@@ -72,7 +98,7 @@ export class ApiClient {
             }
             try {
                 await this.refreshToken();
-                return this._fetch(endpoint, options, true);
+                return this._fetch(endpoint, options, responseMode, true);
             }
             catch (error) {
                 await this.handleLogout();
@@ -182,58 +208,58 @@ export class ApiClient {
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    async get(endpoint, queryParams, options = {}) {
-        const query = queryParams
-            ? "?" +
-                new URLSearchParams(Object.entries(queryParams).reduce((acc, [key, val]) => {
-                    if (val !== undefined && val !== null) {
-                        acc[key] = String(val);
-                    }
-                    return acc;
-                }, {})).toString()
+    get(endpoint, queryParams, options = {}) {
+        const queryString = queryParams
+            ? new URLSearchParams(Object.entries(queryParams).reduce((acc, [key, val]) => {
+                if (val !== undefined && val !== null) {
+                    acc[key] = String(val);
+                }
+                return acc;
+            }, {})).toString()
             : "";
-        return this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' });
+        const query = queryString ? `?${queryString}` : "";
+        return new VynelixRequest((mode) => this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' }, mode));
     }
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    async post(endpoint, options = {}) {
-        return this._fetch(endpoint, { ...options, method: 'POST' });
+    post(endpoint, options = {}) {
+        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'POST' }, mode));
     }
     /**
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    async put(endpoint, options = {}) {
-        return this._fetch(endpoint, { ...options, method: 'PUT' });
+    put(endpoint, options = {}) {
+        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'PUT' }, mode));
     }
     /**
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    async patch(endpoint, options = {}) {
-        return this._fetch(endpoint, { ...options, method: 'PATCH' });
+    patch(endpoint, options = {}) {
+        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'PATCH' }, mode));
     }
     /**
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    async delete(endpoint, options = {}) {
-        return this._fetch(endpoint, { ...options, method: 'DELETE' });
+    delete(endpoint, options = {}) {
+        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'DELETE' }, mode));
     }
 }

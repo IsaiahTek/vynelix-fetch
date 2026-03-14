@@ -46,6 +46,26 @@ export interface ApiClientConfig {
     logoutEndpoint?: string;
 }
 /**
+ * A wrapper for API requests that allows for fluent chaining.
+ * Implements PromiseLike so it can be awaited directly for a wrapped response,
+ * or chained with .raw() for the unwrapped data.
+ * @template T The expected response data type.
+ */
+export declare class VynelixRequest<T> implements PromiseLike<ApiResponse<T>> {
+    private exec;
+    constructor(exec: (mode: ResponseMode) => Promise<ApiResponse<T> | T>);
+    /**
+     * Implements the then method for PromiseLike.
+     * Awaiting the request directly returns the wrapped ApiResponse.
+     */
+    then<TResult1 = ApiResponse<T>, TResult2 = never>(onfulfilled?: ((value: ApiResponse<T>) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): Promise<TResult1 | TResult2>;
+    /**
+     * Returns the raw data from the API response instead of the wrapped envelope.
+     * @returns A promise that resolves to the raw data T.
+     */
+    raw(): Promise<T>;
+}
+/**
  * A configurable and robust API client for handling HTTP requests,
  * authentication headers, and automatic token refreshing.
  */
@@ -69,11 +89,12 @@ export declare class ApiClient {
      * Internal fetch wrapper that handles base URL, headers, and 401 retries.
      * @template T The expected response data type.
      * @param endpoint The API endpoint (relative to baseUrl).
-     * @param options The fetch options and response mode.
+     * @param options The fetch options.
+     * @param responseMode The desired response format.
      * @param isRetry Whether this is a retry attempt after a refresh.
      * @returns A promise that resolves to the API response or raw data.
      */
-    private _fetch;
+    _fetch<T>(endpoint: string, options?: RequestOptions, responseMode?: ResponseMode, isRetry?: boolean): Promise<ApiResponse<T> | T>;
     /**
      * Triggers a token refresh request.
      * If a refresh is already in progress, it returns the existing promise.
@@ -91,39 +112,39 @@ export declare class ApiClient {
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    get<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): Promise<ApiResponse<T> | T>;
+    get<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): VynelixRequest<T>;
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    post<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
+    post<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
     /**
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    put<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
+    put<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
     /**
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    patch<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
+    patch<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
     /**
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A promise that resolves to the API response.
+     * @returns A VynelixRequest that can be awaited or chained with .raw().
      */
-    delete<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
+    delete<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
 }
