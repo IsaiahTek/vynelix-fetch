@@ -1,5 +1,5 @@
 {
-  "name": "vynelix-fetch",
+  "name": "@vynelix/fetch",
   "version": "1.0.0",
   "description": "A lightweight, configurable, and robust TypeScript API client library.",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "refresh-token",
     "typescript"
   ],
-  "author": "",
+  "author": "Engr., Isaiah Pius E.",
   "license": "MIT",
   "devDependencies": {
     "tsx": "^4.0.0",

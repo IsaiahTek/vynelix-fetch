@@ -13,9 +13,9 @@ A lightweight, configurable, and robust TypeScript API client library with built
 ## Installation
 
 ```bash
-npm install vynelix_fetch
+npm install @vynelix/fetch
 # or
-yarn add vynelix_fetch
+yarn add @vynelix/fetch
 ```
 
 ## Basic Usage
@@ -23,7 +23,7 @@ yarn add vynelix_fetch
 ### Initialize the Client
 
 ```typescript
-import { ApiClient } from 'vynelix_fetch';
+import { ApiClient } from '@vynelix/fetch';
 
 const api = new ApiClient({
   baseUrl: 'https://api.yourservice.com',
