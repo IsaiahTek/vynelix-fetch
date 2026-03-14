@@ -6,6 +6,19 @@ import { ApiResponse } from "./api-response.type";
  */
 export type AuthType = 'cookie' | 'bearer';
 /**
+ * Supported response modes.
+ * - 'wrapped': Expects an envelope structure (e.g., ApiResponse<T>).
+ * - 'raw': Returns the request body data directly as T.
+ */
+export type ResponseMode = 'wrapped' | 'raw';
+/**
+ * Options for individual requests.
+ */
+export interface RequestOptions extends RequestInit {
+    /** Override the default response mode for this specific request. */
+    responseMode?: ResponseMode;
+}
+/**
  * Configuration options for the ApiClient.
  */
 export interface ApiClientConfig {
@@ -13,6 +26,8 @@ export interface ApiClientConfig {
     baseUrl: string;
     /** The authentication mechanism to use. Defaults to 'cookie'. */
     authType?: AuthType;
+    /** The default response mode for all requests. Defaults to 'wrapped'. */
+    responseMode?: ResponseMode;
     /**
      * The authentication token or a function that returns the token.
      * Only used when authType is 'bearer'.
@@ -54,9 +69,9 @@ export declare class ApiClient {
      * Internal fetch wrapper that handles base URL, headers, and 401 retries.
      * @template T The expected response data type.
      * @param endpoint The API endpoint (relative to baseUrl).
-     * @param options The fetch options.
+     * @param options The fetch options and response mode.
      * @param isRetry Whether this is a retry attempt after a refresh.
-     * @returns A promise that resolves to the API response.
+     * @returns A promise that resolves to the API response or raw data.
      */
     private _fetch;
     /**
@@ -75,39 +90,40 @@ export declare class ApiClient {
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    get<T>(endpoint: string, queryParams?: Record<string, any>): Promise<ApiResponse<T>>;
+    get<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): Promise<ApiResponse<T> | T>;
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings (e.g., body).
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    post<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>>;
+    post<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
     /**
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    put<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>>;
+    put<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
     /**
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    patch<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>>;
+    patch<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
     /**
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    delete<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>>;
+    delete<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T> | T>;
 }

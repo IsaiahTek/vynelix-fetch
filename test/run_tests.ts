@@ -50,7 +50,7 @@ async function runTests() {
     return Promise.resolve({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ data: 'success' }),
+      json: () => Promise.resolve(url.includes('/raw') ? 'raw-success' : { data: 'success' }),
     });
   };
 
@@ -65,9 +65,9 @@ async function runTests() {
     onLogout: () => console.log('[onLogout Callback] Logged out successfully'),
   });
 
-  // Test 1: Bearer Header with return type
-  console.log('Test 1: Check Bearer Header');
-  const testRes: ApiResponse<string> = await client.get<string>('/test');
+  // Test 1: Bearer Header with return type (Wrapped Mode)
+  console.log('Test 1: Check Bearer Header (Wrapped)');
+  const testRes = await client.get<string>('/test');
   console.log('Test 1 Result:', testRes.data);
 
   // Test 2: Error Callback
@@ -80,9 +80,15 @@ async function runTests() {
 
   // Test 3: Unauthorized & Refresh (Retry) with complex return type
   console.log('\nTest 3: Check 401 & Refresh Logic with User type');
-  const res: ApiResponse<User> = await client.get<User>('/unauthorized');
+  const res = await client.get<User>('/unauthorized');
   console.log('Response after refresh retry:', JSON.stringify(res.data));
   console.assert(res.data.name === 'John Doe', 'Retry data mismatch');
+
+  // Test 4: Raw Response Mode using .raw() chaining
+  console.log('\nTest 4: Check Raw Response Mode (.raw())');
+  const rawRes = await client.get<string>('/raw').raw();
+  console.log('Raw Response Result:', rawRes);
+  console.assert(rawRes === 'raw-success', 'Raw data mismatch');
 
   console.log('\n--- All Tests Execution Finished ---');
 }

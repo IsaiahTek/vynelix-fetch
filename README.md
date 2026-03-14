@@ -9,6 +9,7 @@ A lightweight, configurable, and robust TypeScript API client library with built
 - **Auto-Refresh**: Built-in logic to handle 401 Unauthorized responses and refresh tokens.
 - **Customizable Callbacks**: Plug in your own notification or logging logic with `onError` and `onLogout`.
 - **Fully Configurable**: Set base URLs, endpoints, and authentication types at initialization.
+- **Flexible Responses**: Support for both wrapped (enveloped) and raw API responses.
 
 ## Installation
 
@@ -69,6 +70,10 @@ await api.put<User>('/users/1', {
 
 // DELETE request
 await api.delete('/users/1');
+
+// Raw Response Mode (No Envelope)
+const data = await api.get<string>('/raw-data', {}, { responseMode: 'raw' });
+console.log(data); // Returns the parsed body directly
 ```
 
 ## Configuration Options
@@ -82,6 +87,7 @@ await api.delete('/users/1');
 | `logoutEndpoint` | `string` | The endpoint to call for logging out (Default: `/auth/logout`). |
 | `onError` | `(error: { title: string; messages: string[] }) => void` | Callback triggered on request failure. |
 | `onLogout` | `() => void` | Callback triggered when a session is terminated (e.g., on 401 failure). |
+| `responseMode`| `'wrapped' \| 'raw'` | The default response mode for the client (Default: `'wrapped'`). |
 
 ## Advanced Usage
 
@@ -102,4 +108,18 @@ await api.get('/secret-data', {
     'X-Custom-Header': 'CustomValue'
   }
 });
+```
+
+### Flexible Response Modes
+
+By default, `vynelix-fetch` returns a wrapped response structure (`ApiResponse<T>`). If you want the raw data directly, you can simply chain `.raw()` to your request:
+
+```typescript
+// Standard wrapped response
+const response = await api.get<User>('/me');
+console.log(response.data.name);
+
+// Direct raw data access
+const user = await api.get<User>('/me').raw();
+console.log(user.name);
 ```

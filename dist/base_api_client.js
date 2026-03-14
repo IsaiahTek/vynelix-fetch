@@ -13,6 +13,7 @@ export class ApiClient {
     constructor(config) {
         this.config = {
             authType: 'cookie',
+            responseMode: 'wrapped',
             refreshEndpoint: '/auth/refresh',
             logoutEndpoint: '/auth/logout',
             ...config,
@@ -47,13 +48,14 @@ export class ApiClient {
      * Internal fetch wrapper that handles base URL, headers, and 401 retries.
      * @template T The expected response data type.
      * @param endpoint The API endpoint (relative to baseUrl).
-     * @param options The fetch options.
+     * @param options The fetch options and response mode.
      * @param isRetry Whether this is a retry attempt after a refresh.
-     * @returns A promise that resolves to the API response.
+     * @returns A promise that resolves to the API response or raw data.
      */
     async _fetch(endpoint, options = {}, isRetry = false) {
         const url = `${this.config.baseUrl}${endpoint}`;
         const bodyIsFormData = options.body instanceof FormData;
+        const responseMode = options.responseMode || this.config.responseMode;
         const fetchOptions = {
             ...options,
             headers: await this.getAuthHeaders(options, bodyIsFormData),
@@ -84,23 +86,38 @@ export class ApiClient {
                 json = text ? JSON.parse(text) : {};
             }
             catch (e) {
-                // Fallback if not JSON
+                // Fallback if not JSON or empty
             }
-            const messages = Array.isArray(json.message)
-                ? json.message
-                : [json.message ?? 'Something went wrong'];
+            // Default message extraction logic
+            let messages = ['Something went wrong'];
+            if (Array.isArray(json.message)) {
+                messages = json.message;
+            }
+            else if (json.message) {
+                messages = [json.message];
+            }
+            else if (json.error) {
+                messages = Array.isArray(json.error) ? json.error : [json.error];
+            }
+            else if (response.statusText) {
+                messages = [response.statusText];
+            }
             if (this.config.onError) {
                 this.config.onError({
-                    title: 'Error',
+                    title: responseMode === 'raw' ? 'API Error' : 'Error',
                     messages,
                 });
             }
-            throw new Error(json.message ?? 'Request failed');
+            throw new Error(messages[0]);
         }
         if (response.status === 204) {
-            return { data: null };
+            return (responseMode === 'wrapped' ? { data: null } : null);
         }
-        return response.json();
+        const data = await response.json();
+        if (responseMode === 'wrapped') {
+            return data;
+        }
+        return data;
     }
     /**
      * Triggers a token refresh request.
@@ -164,9 +181,10 @@ export class ApiClient {
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
-    async get(endpoint, queryParams) {
+    async get(endpoint, queryParams, options = {}) {
         const query = queryParams
             ? "?" +
                 new URLSearchParams(Object.entries(queryParams).reduce((acc, [key, val]) => {
@@ -176,14 +194,13 @@ export class ApiClient {
                     return acc;
                 }, {})).toString()
             : "";
-        const res = await this._fetch(`${endpoint}${query}`, { method: 'GET' });
-        return res;
+        return this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' });
     }
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings (e.g., body).
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
     async post(endpoint, options = {}) {
@@ -193,7 +210,7 @@ export class ApiClient {
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
     async put(endpoint, options = {}) {
@@ -203,7 +220,7 @@ export class ApiClient {
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
     async patch(endpoint, options = {}) {
@@ -213,7 +230,7 @@ export class ApiClient {
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
-     * @param options Optional fetch settings.
+     * @param options Optional request settings.
      * @returns A promise that resolves to the API response.
      */
     async delete(endpoint, options = {}) {
