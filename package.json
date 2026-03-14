@@ -1,0 +1,29 @@
+{
+  "name": "vynelix-fetch",
+  "version": "1.0.0",
+  "description": "A lightweight, configurable, and robust TypeScript API client library.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npx tsx run_tests.ts"
+  },
+  "keywords": [
+    "fetch",
+    "api",
+    "client",
+    "auth",
+    "refresh-token",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3"
+  }
+}
