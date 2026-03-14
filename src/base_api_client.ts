@@ -67,8 +67,8 @@ export class ApiClient {
     }
 
     if (this.config.authType === 'bearer' && this.config.token) {
-      const token = typeof this.config.token === 'function' 
-        ? await this.config.token() 
+      const token = typeof this.config.token === 'function'
+        ? await this.config.token()
         : this.config.token;
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -208,7 +208,7 @@ export class ApiClient {
       if (this.config.authType === 'cookie') {
         fetchOptions.credentials = 'include';
       }
-      
+
       try {
         await fetch(`${this.config.baseUrl}${this.config.logoutEndpoint}`, fetchOptions);
       } catch (e) {
@@ -240,7 +240,8 @@ export class ApiClient {
         }, {} as Record<string, string>)
       ).toString()
       : "";
-    return this._fetch(`${endpoint}${query}`, { method: 'GET' });
+    const res = await this._fetch<T>(`${endpoint}${query}`, { method: 'GET' });
+    return res;
   }
 
   /**
@@ -251,7 +252,7 @@ export class ApiClient {
    * @returns A promise that resolves to the API response.
    */
   async post<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    return this._fetch(endpoint, { ...options, method: 'POST' });
+    return this._fetch<T>(endpoint, { ...options, method: 'POST' });
   }
 
   /**
@@ -262,7 +263,7 @@ export class ApiClient {
    * @returns A promise that resolves to the API response.
    */
   async put<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    return this._fetch(endpoint, { ...options, method: 'PUT' });
+    return this._fetch<T>(endpoint, { ...options, method: 'PUT' });
   }
 
   /**
@@ -273,7 +274,7 @@ export class ApiClient {
    * @returns A promise that resolves to the API response.
    */
   async patch<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    return this._fetch(endpoint, { ...options, method: 'PATCH' });
+    return this._fetch<T>(endpoint, { ...options, method: 'PATCH' });
   }
 
   /**
@@ -284,7 +285,7 @@ export class ApiClient {
    * @returns A promise that resolves to the API response.
    */
   async delete<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    return this._fetch(endpoint, { ...options, method: 'DELETE' });
+    return this._fetch<T>(endpoint, { ...options, method: 'DELETE' });
   }
 }
 

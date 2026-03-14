@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "npx tsx run_tests.ts"
+    "test": "npx tsx test/run_tests.ts"
   },
   "keywords": [
     "fetch",
@@ -21,7 +21,7 @@
     "typescript"
   ],
   "author": "Engr., Isaiah Pius E.",
-  
+
   "repository": {
     "url": "https://github.com/IsaiahTek/vynelix-fetch",
     "type": "git"

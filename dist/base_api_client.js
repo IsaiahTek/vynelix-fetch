@@ -176,7 +176,8 @@ export class ApiClient {
                     return acc;
                 }, {})).toString()
             : "";
-        return this._fetch(`${endpoint}${query}`, { method: 'GET' });
+        const res = await this._fetch(`${endpoint}${query}`, { method: 'GET' });
+        return res;
     }
     /**
      * Performs a POST request.
