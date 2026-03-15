@@ -43,7 +43,7 @@ async function runTests() {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ id: 1, name: 'John Doe' }),
+        json: () => Promise.resolve({ data: { id: 1, name: 'John Doe' } }),
       });
     }
 
@@ -59,7 +59,6 @@ async function runTests() {
 
   const client = new ApiClient({
     baseUrl: 'https://api.example.com',
-    responseMode: 'raw',
     authType: 'bearer',
     token: 'test-token',
     onError: (err) => console.log(`[onError Callback] ${err.title}: ${err.messages.join(', ')}`),
@@ -87,7 +86,7 @@ async function runTests() {
 
   // Test 4: Raw Response Mode using .raw() chaining
   console.log('\nTest 4: Check Raw Response Mode (.raw())');
-  const rawRes = await client.get<string>('/raw').raw();
+  const rawRes = await client.getData<string>('/raw');
   console.log('Raw Response Result:', rawRes);
   console.assert(rawRes === 'raw-success', 'Raw data mismatch');
 

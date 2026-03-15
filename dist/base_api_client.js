@@ -32,20 +32,23 @@ export class ApiClient {
     config;
     isRefreshing = false;
     refreshPromise;
-    /**
-     * Initializes a new instance of the ApiClient.
-     * @param config Configuration options for the client.
-     */
+    requestInterceptors = [];
+    responseInterceptors = [];
     constructor(config) {
         this.config = {
-            authType: 'cookie',
-            responseMode: 'wrapped',
-            refreshEndpoint: '/auth/refresh',
-            logoutEndpoint: '/auth/logout',
+            authType: "cookie",
+            refreshEndpoint: "/auth/refresh",
+            logoutEndpoint: "/auth/logout",
             shouldRefreshOnUnauthorized: () => true,
             shouldLogoutOnUnauthorizedAfterRefresh: () => true,
-            ...config,
+            ...config
         };
+    }
+    addRequestInterceptor(fn) {
+        this.requestInterceptors.push(fn);
+    }
+    addResponseInterceptor(fn) {
+        this.responseInterceptors.push(fn);
     }
     /**
      * Generates the authentication and content headers for a request.
@@ -87,14 +90,22 @@ export class ApiClient {
     async _fetch(endpoint, options = {}, responseMode = 'wrapped', isRetry = false) {
         const url = `${this.config.baseUrl}${endpoint}`;
         const bodyIsFormData = options.body instanceof FormData;
-        const fetchOptions = {
+        let request = {
             ...options,
             headers: await this.getAuthHeaders(options, bodyIsFormData),
         };
         if (this.config.authType === 'cookie') {
-            fetchOptions.credentials = "include";
+            request.credentials = "include";
         }
-        const response = await fetch(url, fetchOptions);
+        // run request interceptors
+        for (const interceptor of this.requestInterceptors) {
+            request = await interceptor(request);
+        }
+        let response = await fetch(url, request);
+        // run response interceptors
+        for (const interceptor of this.responseInterceptors) {
+            response = await interceptor(response);
+        }
         // Handle 401 Unauthorized
         if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
             const error = new Error(response.statusText);
@@ -233,7 +244,7 @@ export class ApiClient {
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
     get(endpoint, queryParams, options = {}) {
         const queryString = queryParams
@@ -242,46 +253,103 @@ export class ApiClient {
                 .map(([k, v]) => [k, String(v)])).toString()
             : "";
         const query = queryString ? `?${queryString}` : "";
-        return new VynelixRequest((mode) => this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' }, mode));
+        return this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' }, "wrapped");
+    }
+    /**
+     * Performs a GET request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param queryParams Optional query parameters to append to the URL.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    getData(endpoint, queryParams, options = {}) {
+        const queryString = queryParams
+            ? new URLSearchParams(Object.entries(queryParams)
+                .filter(([_, v]) => v !== undefined && v !== null)
+                .map(([k, v]) => [k, String(v)])).toString()
+            : "";
+        const query = queryString ? `?${queryString}` : "";
+        return this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' }, "raw");
     }
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
     post(endpoint, options = {}) {
-        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'POST' }, mode));
+        return this._fetch(endpoint, { ...options, method: 'POST' }, "wrapped");
+    }
+    /**
+     * Performs a POST request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    postData(endpoint, options = {}) {
+        return this._fetch(endpoint, { ...options, method: 'POST' }, "raw");
     }
     /**
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
     put(endpoint, options = {}) {
-        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'PUT' }, mode));
+        return this._fetch(endpoint, { ...options, method: 'PUT' }, "wrapped");
+    }
+    /**
+     * Performs a PUT request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    putData(endpoint, options = {}) {
+        return this._fetch(endpoint, { ...options, method: 'PUT' }, "raw");
     }
     /**
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
     patch(endpoint, options = {}) {
-        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'PATCH' }, mode));
+        return this._fetch(endpoint, { ...options, method: 'PATCH' }, "wrapped");
+    }
+    /**
+     * Performs a PATCH request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    patchData(endpoint, options = {}) {
+        return this._fetch(endpoint, { ...options, method: 'PATCH' }, "raw");
     }
     /**
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
     delete(endpoint, options = {}) {
-        return new VynelixRequest((mode) => this._fetch(endpoint, { ...options, method: 'DELETE' }, mode));
+        return this._fetch(endpoint, { ...options, method: 'DELETE' }, "wrapped");
+    }
+    /**
+     * Performs a DELETE request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    deleteData(endpoint, options = {}) {
+        return this._fetch(endpoint, { ...options, method: 'DELETE' }, "raw");
     }
 }

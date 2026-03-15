@@ -26,8 +26,6 @@ export interface ApiClientConfig {
     baseUrl: string;
     /** The authentication mechanism to use. Defaults to 'cookie'. */
     authType?: AuthType;
-    /** The default response mode for all requests. Defaults to 'wrapped'. */
-    responseMode?: ResponseMode;
     /**
      * The authentication token or a function that returns the token.
      * Only used when authType is 'bearer'.
@@ -80,14 +78,14 @@ export declare class VynelixRequest<T> implements PromiseLike<ApiResponse<T>> {
  * authentication headers, and automatic token refreshing.
  */
 export declare class ApiClient {
-    private readonly config;
+    private config;
     private isRefreshing;
     private refreshPromise?;
-    /**
-     * Initializes a new instance of the ApiClient.
-     * @param config Configuration options for the client.
-     */
+    private requestInterceptors;
+    private responseInterceptors;
     constructor(config: ApiClientConfig);
+    addRequestInterceptor(fn: (req: RequestInit) => Promise<RequestInit> | RequestInit): void;
+    addResponseInterceptor(fn: (res: Response) => Promise<Response> | Response): void;
     /**
      * Generates the authentication and content headers for a request.
      * @param options The RequestInit options.
@@ -122,39 +120,80 @@ export declare class ApiClient {
      * @param endpoint The API endpoint.
      * @param queryParams Optional query parameters to append to the URL.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
-    get<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): VynelixRequest<T>;
+    get<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): Promise<ApiResponse<T>>;
+    /**
+     * Performs a GET request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param queryParams Optional query parameters to append to the URL.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    getData<T>(endpoint: string, queryParams?: Record<string, any>, options?: RequestOptions): Promise<T>;
     /**
      * Performs a POST request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
-    post<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
+    post<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+    /**
+     * Performs a POST request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    postData<T>(endpoint: string, options?: RequestOptions): Promise<T>;
     /**
      * Performs a PUT request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
-    put<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
+    put<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+    /**
+     * Performs a PUT request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    putData<T>(endpoint: string, options?: RequestOptions): Promise<T>;
     /**
      * Performs a PATCH request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
-    patch<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
+    patch<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+    /**
+     * Performs a PATCH request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    patchData<T>(endpoint: string, options?: RequestOptions): Promise<T>;
     /**
      * Performs a DELETE request.
      * @template T The expected response data type.
      * @param endpoint The API endpoint.
      * @param options Optional request settings.
-     * @returns A VynelixRequest that can be awaited or chained with .raw().
+     * @returns A promise that resolves to the response ApiResponse<T>.
      */
-    delete<T>(endpoint: string, options?: RequestOptions): VynelixRequest<T>;
+    delete<T>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>>;
+    /**
+     * Performs a DELETE request.
+     * @template T The expected response data type.
+     * @param endpoint The API endpoint.
+     * @param options Optional request settings.
+     * @returns A promise that resolves to the response data.
+     */
+    deleteData<T>(endpoint: string, options?: RequestOptions): Promise<T>;
 }

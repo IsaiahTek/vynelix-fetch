@@ -10,6 +10,9 @@ type ApiBaseResponse = {
     message?: string | string[];
     /** ISO timestamp of when the response was generated */
     timestamp: string;
+
+    /** Optional metadata from the server */
+    metadata?: Record<string, any>;
 }
 
 /**
