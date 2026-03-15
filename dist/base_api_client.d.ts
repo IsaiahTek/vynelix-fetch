@@ -44,6 +44,8 @@ export interface ApiClientConfig {
     refreshEndpoint?: string;
     /** The endpoint used for logging out. Defaults to '/auth/logout'. */
     logoutEndpoint?: string;
+    /** Optional callback to handle should redirect after failed token refresh. */
+    shouldRefreshOnUnauthorized?: (error: Error) => boolean;
 }
 /**
  * A wrapper for API requests that allows for fluent chaining.

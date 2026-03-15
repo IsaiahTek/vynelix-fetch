@@ -92,6 +92,13 @@ export class ApiClient {
         const response = await fetch(url, fetchOptions);
         // Handle 401 Unauthorized
         if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
+            if (isRetry && !this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText))) {
+                const data = await response.json();
+                if (responseMode === 'wrapped') {
+                    return data;
+                }
+                return data;
+            }
             if (isRetry) {
                 await this.handleLogout();
                 throw new Error('Unauthorized');

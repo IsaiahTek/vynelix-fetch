@@ -45,6 +45,9 @@ export interface ApiClientConfig {
   refreshEndpoint?: string;
   /** The endpoint used for logging out. Defaults to '/auth/logout'. */
   logoutEndpoint?: string;
+
+  /** Optional callback to handle should redirect after failed token refresh. */
+  shouldRefreshOnUnauthorized?: (error: Error) => boolean;
 }
 
 /**
@@ -160,6 +163,15 @@ export class ApiClient {
 
     // Handle 401 Unauthorized
     if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
+      if (isRetry && !this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText))) {
+        const data = await response.json();
+
+        if (responseMode === 'wrapped') {
+          return data as ApiResponse<T>;
+        }
+
+        return data as T;
+      }
       if (isRetry) {
         await this.handleLogout();
         throw new Error('Unauthorized');
