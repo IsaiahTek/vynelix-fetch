@@ -68,7 +68,10 @@ export class ApiClient {
             }
         }
         if (options?.headers) {
-            Object.assign(headers, options.headers);
+            const h = new Headers(options.headers);
+            h.forEach((value, key) => {
+                headers[key] = value;
+            });
         }
         return headers;
     }
@@ -93,29 +96,29 @@ export class ApiClient {
         }
         const response = await fetch(url, fetchOptions);
         // Handle 401 Unauthorized
+        // Handle 401 Unauthorized
         if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
-            if (isRetry && !this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText))) {
-                console.log("SHOULD NOT REFRESH ON UNAUTHORIZED");
-                const data = await response.json();
-                if (responseMode === 'wrapped') {
-                    return data;
+            const error = new Error(response.statusText);
+            // If already retried once
+            if (isRetry) {
+                if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
+                    await this.handleLogout();
                 }
-                return data;
+                throw error;
             }
-            if (isRetry && !this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(new Error(response.statusText))) {
-                await this.handleLogout();
-                throw new Error('Unauthorized');
+            // Decide whether to refresh
+            if (!this.config.shouldRefreshOnUnauthorized?.(error)) {
+                throw error;
             }
             try {
-                console.log("SHOULD REFRESH ON UNAUTHORIZED", this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText)));
                 await this.refreshToken();
                 return this._fetch(endpoint, options, responseMode, true);
             }
-            catch (error) {
-                if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
+            catch (err) {
+                if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(err)) {
                     await this.handleLogout();
-                    throw error;
                 }
+                throw err;
             }
         }
         if (!response.ok) {
@@ -150,9 +153,17 @@ export class ApiClient {
             throw new Error(messages[0]);
         }
         if (response.status === 204) {
-            return (responseMode === 'wrapped' ? { data: null } : null);
+            return responseMode === 'wrapped'
+                ? { data: null }
+                : null;
         }
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        }
+        catch {
+            data = null;
+        }
         if (responseMode === 'wrapped') {
             return data;
         }
@@ -225,12 +236,9 @@ export class ApiClient {
      */
     get(endpoint, queryParams, options = {}) {
         const queryString = queryParams
-            ? new URLSearchParams(Object.entries(queryParams).reduce((acc, [key, val]) => {
-                if (val !== undefined && val !== null) {
-                    acc[key] = String(val);
-                }
-                return acc;
-            }, {})).toString()
+            ? new URLSearchParams(Object.entries(queryParams)
+                .filter(([_, v]) => v !== undefined && v !== null)
+                .map(([k, v]) => [k, String(v)])).toString()
             : "";
         const query = queryString ? `?${queryString}` : "";
         return new VynelixRequest((mode) => this._fetch(`${endpoint}${query}`, { ...options, method: 'GET' }, mode));

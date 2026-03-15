@@ -137,7 +137,10 @@ export class ApiClient {
     }
 
     if (options?.headers) {
-      Object.assign(headers, options.headers);
+      const h = new Headers(options.headers);
+      h.forEach((value, key) => {
+        headers[key] = value;
+      });
     }
 
     return headers;
@@ -173,31 +176,33 @@ export class ApiClient {
     const response = await fetch(url, fetchOptions);
 
     // Handle 401 Unauthorized
+    // Handle 401 Unauthorized
     if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
-      if (isRetry && !this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText))) {
-        console.log("SHOULD NOT REFRESH ON UNAUTHORIZED");
-        const data = await response.json();
+      const error = new Error(response.statusText);
 
-        if (responseMode === 'wrapped') {
-          return data as ApiResponse<T>;
+      // If already retried once
+      if (isRetry) {
+        if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
+          await this.handleLogout();
         }
 
-        return data as T;
+        throw error;
       }
-      if (isRetry && !this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(new Error(response.statusText))) {
-        await this.handleLogout();
-        throw new Error('Unauthorized');
+
+      // Decide whether to refresh
+      if (!this.config.shouldRefreshOnUnauthorized?.(error)) {
+        throw error;
       }
 
       try {
-        console.log("SHOULD REFRESH ON UNAUTHORIZED", this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText)));
         await this.refreshToken();
         return this._fetch<T>(endpoint, options, responseMode, true);
-      } catch (error) {
-        if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error as Error)) {
+      } catch (err) {
+        if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(err as Error)) {
           await this.handleLogout();
-          throw error;
         }
+
+        throw err;
       }
     }
 
@@ -233,10 +238,18 @@ export class ApiClient {
     }
 
     if (response.status === 204) {
-      return (responseMode === 'wrapped' ? { data: null } : null) as any;
+      return responseMode === 'wrapped'
+        ? ({ data: null } as ApiResponse<T>)
+        : (null as T);
     }
 
-    const data = await response.json();
+    let data: any;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
 
     if (responseMode === 'wrapped') {
       return data as ApiResponse<T>;
@@ -326,12 +339,9 @@ export class ApiClient {
   ): VynelixRequest<T> {
     const queryString = queryParams
       ? new URLSearchParams(
-        Object.entries(queryParams).reduce((acc, [key, val]) => {
-          if (val !== undefined && val !== null) {
-            acc[key] = String(val);
-          }
-          return acc;
-        }, {} as Record<string, string>)
+        Object.entries(queryParams)
+          .filter(([_, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => [k, String(v)])
       ).toString()
       : "";
     const query = queryString ? `?${queryString}` : "";
