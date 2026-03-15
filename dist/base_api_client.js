@@ -179,21 +179,27 @@ export class ApiClient {
             return this.refreshPromise;
         }
         if (!this.config.refreshEndpoint) {
-            throw new Error('Refresh endpoint not configured');
+            throw new Error("Refresh endpoint not configured");
         }
         this.isRefreshing = true;
         this.refreshPromise = (async () => {
             try {
                 const fetchOptions = {
-                    method: 'POST',
+                    method: "POST",
                     headers: await this.getAuthHeaders(),
                 };
-                if (this.config.authType === 'cookie') {
-                    fetchOptions.credentials = 'include';
+                if (this.config.authType === "cookie") {
+                    fetchOptions.credentials = "include";
                 }
                 const res = await fetch(`${this.config.baseUrl}${this.config.refreshEndpoint}`, fetchOptions);
                 if (!res.ok) {
-                    throw new Error('Refresh failed');
+                    const error = new Error("Refresh failed");
+                    if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
+                        await this.handleLogout();
+                        throw error;
+                    }
+                    // Ignore refresh failure (e.g. homepage case)
+                    return;
                 }
             }
             finally {
