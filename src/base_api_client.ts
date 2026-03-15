@@ -175,6 +175,7 @@ export class ApiClient {
     // Handle 401 Unauthorized
     if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
       if (isRetry && !this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText))) {
+        console.log("SHOULD NOT REFRESH ON UNAUTHORIZED");
         const data = await response.json();
 
         if (responseMode === 'wrapped') {
@@ -183,12 +184,13 @@ export class ApiClient {
 
         return data as T;
       }
-      if (isRetry) {
+      if (isRetry && !this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(new Error(response.statusText))) {
         await this.handleLogout();
         throw new Error('Unauthorized');
       }
 
       try {
+        console.log("SHOULD REFRESH ON UNAUTHORIZED", this.config.shouldRefreshOnUnauthorized?.(new Error(response.statusText)));
         await this.refreshToken();
         return this._fetch<T>(endpoint, options, responseMode, true);
       } catch (error) {
