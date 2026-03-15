@@ -96,10 +96,9 @@ export class ApiClient {
         }
         const response = await fetch(url, fetchOptions);
         // Handle 401 Unauthorized
-        // Handle 401 Unauthorized
         if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
             const error = new Error(response.statusText);
-            // If already retried once
+            // If request already retried
             if (isRetry) {
                 if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
                     await this.handleLogout();
@@ -107,7 +106,8 @@ export class ApiClient {
                 throw error;
             }
             // Decide whether to refresh
-            if (!this.config.shouldRefreshOnUnauthorized?.(error)) {
+            const shouldRefresh = this.config.shouldRefreshOnUnauthorized?.(error) ?? true;
+            if (!shouldRefresh) {
                 throw error;
             }
             try {
