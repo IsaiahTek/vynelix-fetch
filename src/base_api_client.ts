@@ -179,7 +179,7 @@ export class ApiClient {
     if (response.status === 401 && endpoint !== this.config.refreshEndpoint) {
       const error = new Error(response.statusText);
 
-      // If request already retried
+      // retry already attempted
       if (isRetry) {
         if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
           await this.handleLogout();
@@ -188,23 +188,21 @@ export class ApiClient {
         throw error;
       }
 
-      // Decide whether to refresh
-      const shouldRefresh = this.config.shouldRefreshOnUnauthorized?.(error) ?? true;
+      const shouldRefresh =
+        this.config.shouldRefreshOnUnauthorized?.(error) ?? true;
 
+      // behave like original client
       if (!shouldRefresh) {
-        throw error;
-      }
-
-      try {
-        await this.refreshToken();
-        return this._fetch<T>(endpoint, options, responseMode, true);
-      } catch (err) {
-        if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(err as Error)) {
-          await this.handleLogout();
+        if (responseMode === "wrapped") {
+          return { data: null } as ApiResponse<T>;
         }
 
-        throw err;
+        return null as T;
       }
+
+      await this.refreshToken();
+
+      return this._fetch<T>(endpoint, options, responseMode, true);
     }
 
     if (!response.ok) {
