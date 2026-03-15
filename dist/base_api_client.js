@@ -42,6 +42,8 @@ export class ApiClient {
             responseMode: 'wrapped',
             refreshEndpoint: '/auth/refresh',
             logoutEndpoint: '/auth/logout',
+            shouldRefreshOnUnauthorized: () => true,
+            shouldLogoutOnUnauthorizedAfterRefresh: () => true,
             ...config,
         };
     }
@@ -108,8 +110,10 @@ export class ApiClient {
                 return this._fetch(endpoint, options, responseMode, true);
             }
             catch (error) {
-                await this.handleLogout();
-                throw error;
+                if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error)) {
+                    await this.handleLogout();
+                    throw error;
+                }
             }
         }
         if (!response.ok) {

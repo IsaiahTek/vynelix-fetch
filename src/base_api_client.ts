@@ -46,8 +46,17 @@ export interface ApiClientConfig {
   /** The endpoint used for logging out. Defaults to '/auth/logout'. */
   logoutEndpoint?: string;
 
-  /** Optional callback to handle should redirect after failed token refresh. */
+  /** 
+   * Optional callback to handle should redirect after failed token refresh. 
+   * Defaults to true.
+   */
   shouldRefreshOnUnauthorized?: (error: Error) => boolean;
+
+  /** 
+   * Optional callback to handle should redirect after failed token refresh. 
+   * Defaults to true.
+   */
+  shouldLogoutOnUnauthorizedAfterRefresh?: (error: Error) => boolean;
 }
 
 /**
@@ -98,6 +107,8 @@ export class ApiClient {
       responseMode: 'wrapped',
       refreshEndpoint: '/auth/refresh',
       logoutEndpoint: '/auth/logout',
+      shouldRefreshOnUnauthorized: () => true,
+      shouldLogoutOnUnauthorizedAfterRefresh: () => true,
       ...config,
     };
   }
@@ -181,8 +192,10 @@ export class ApiClient {
         await this.refreshToken();
         return this._fetch<T>(endpoint, options, responseMode, true);
       } catch (error) {
-        await this.handleLogout();
-        throw error;
+        if (this.config.shouldLogoutOnUnauthorizedAfterRefresh?.(error as Error)) {
+          await this.handleLogout();
+          throw error;
+        }
       }
     }
 
