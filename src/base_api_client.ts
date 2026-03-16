@@ -57,34 +57,34 @@ export interface ApiClientConfig {
   shouldLogoutOnUnauthorizedAfterRefresh?: (error: Error) => boolean;
 }
 
-/**
- * A wrapper for API requests that allows for fluent chaining.
- * Implements PromiseLike so it can be awaited directly for a wrapped response,
- * or chained with .raw() for the unwrapped data.
- * @template T The expected response data type.
- */
-export class VynelixRequest<T> implements PromiseLike<ApiResponse<T>> {
-  constructor(private exec: (mode: ResponseMode) => Promise<ApiResponse<T> | T>) { }
+// /**
+//  * A wrapper for API requests that allows for fluent chaining.
+//  * Implements PromiseLike so it can be awaited directly for a wrapped response,
+//  * or chained with .raw() for the unwrapped data.
+//  * @template T The expected response data type.
+//  */
+// export class VynelixRequest<T> implements PromiseLike<ApiResponse<T>> {
+//   constructor(private exec: (mode: ResponseMode) => Promise<ApiResponse<T> | T>) { }
 
-  /**
-   * Implements the then method for PromiseLike.
-   * Awaiting the request directly returns the wrapped ApiResponse.
-   */
-  then<TResult1 = ApiResponse<T>, TResult2 = never>(
-    onfulfilled?: ((value: ApiResponse<T>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
-  ): Promise<TResult1 | TResult2> {
-    return (this.exec('wrapped') as Promise<ApiResponse<T>>).then(onfulfilled, onrejected);
-  }
+//   /**
+//    * Implements the then method for PromiseLike.
+//    * Awaiting the request directly returns the wrapped ApiResponse.
+//    */
+//   then<TResult1 = ApiResponse<T>, TResult2 = never>(
+//     onfulfilled?: ((value: ApiResponse<T>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
+//     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+//   ): Promise<TResult1 | TResult2> {
+//     return (this.exec('wrapped') as Promise<ApiResponse<T>>).then(onfulfilled, onrejected);
+//   }
 
-  /**
-   * Returns the raw data from the API response instead of the wrapped envelope.
-   * @returns A promise that resolves to the raw data T.
-   */
-  async raw(): Promise<T> {
-    return this.exec('raw') as Promise<T>;
-  }
-}
+//   /**
+//    * Returns the raw data from the API response instead of the wrapped envelope.
+//    * @returns A promise that resolves to the raw data T.
+//    */
+//   async raw(): Promise<T> {
+//     return this.exec('raw') as Promise<T>;
+//   }
+// }
 
 /**
  * A configurable and robust API client for handling HTTP requests, 
