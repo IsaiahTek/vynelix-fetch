@@ -117,15 +117,10 @@ export class ApiClient {
                 throw error;
             }
             const shouldRefresh = this.config.shouldRefreshOnUnauthorized?.(error) ?? true;
-            // behave like original client
-            if (!shouldRefresh) {
-                if (responseMode === "wrapped") {
-                    return { data: null };
-                }
-                return null;
+            if (shouldRefresh) {
+                await this.refreshToken();
+                return this._fetch(endpoint, options, responseMode, true);
             }
-            await this.refreshToken();
-            return this._fetch(endpoint, options, responseMode, true);
         }
         if (!response.ok) {
             const text = await response.text();
@@ -156,7 +151,12 @@ export class ApiClient {
                     messages,
                 });
             }
-            throw new Error(messages[0]);
+            const finalError = new Error(messages[0]);
+            finalError.response = {
+                data: json,
+                status: response.status,
+            };
+            throw finalError;
         }
         if (response.status === 204) {
             return responseMode === 'wrapped'
